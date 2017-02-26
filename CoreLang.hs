@@ -62,28 +62,41 @@ preludeDefs
 -- 1.5 A pretty-printer for the Core language
 --- 1.5.1 Pretty-printingp using strings
 
-pprExpr :: CoreExpr -> Iseq
-pprExpr (ENum n) = iStr $ show n
-pprExpr (EVar v) = iStr v
-pprExpr (EAp e1 e2) = (pprExpr e1) `iAppend` (iStr " ") `iAppend` (pprAExpr e2)
-pprExpr (ELet isrec defns expr)
-  = iConcat [ iStr keyword, iStr "  ", iIndent (pprDefns defns), iStr "\nin ", pprExpr expr ]
+applyLevel = 0
+mulLevel = 1
+plusLevel = 2
+compLevel = 3
+otherLevel = 8
+baseLevel = 9
+
+ppBinOp opLevel opText level e1 e2
+  | level < opLevel = iConcat [ iStr "(", c, iStr ")" ]
+  | otherwise       = c
+  where c = iConcat [ pprExpr opLevel e1, iStr " ", iStr opText, iStr " ", pprExpr opLevel e2 ]
+
+pprExpr :: Int -> CoreExpr -> Iseq
+pprExpr level (ENum n) = iStr $ show n
+pprExpr level (EVar v) = iStr v
+pprExpr level (EAp (EAp (EVar "+") e1) e2) = ppBinOp plusLevel "+" level e1 e2
+pprExpr level (EAp (EAp (EVar "-") e1) e2) = ppBinOp plusLevel "-" level e1 e2
+pprExpr level (EAp (EAp (EVar "*") e1) e2) = ppBinOp mulLevel "*" level e1 e2
+pprExpr level (EAp (EAp (EVar "/") e1) e2) = ppBinOp mulLevel "/" level e1 e2
+pprExpr level (EAp (EAp (EVar ">") e1) e2) = ppBinOp compLevel ">" level e1 e2
+pprExpr level (EAp e1 e2) = iConcat [ pprExpr level e1, iStr " ", pprExpr applyLevel e2 ]
+pprExpr level (ELet isrec defns expr)
+  = iConcat [ iStr keyword, iStr "  ", iIndent (pprDefns defns), iStr "\nin ", pprExpr baseLevel expr ]
     where keyword | not isrec = "let"
                   | isrec     = "letrec"
-pprExpr (ECase x alts)
-  = iConcat [ iStr "case ", pprExpr x, iStr " of\n",
+pprExpr level (ECase x alts)
+  = iConcat [ iStr "case ", pprExpr level x, iStr " of\n",
               iInterleave (iStr ";\n")
                           (map (\(key, vars, body) -> iConcat [iStr "  <", iStr (show key), iStr "> ",
                                                                iConcat (map iStr vars),
-                                                               iStr "-> ", pprExpr body])
+                                                               iStr "-> ", pprExpr baseLevel body])
                                alts) ]
-pprExpr (ELam args body)
+pprExpr level (ELam args body)
   = iConcat [ iStr "\\", iInterleave (iStr " ") (map iStr args),
-              iStr " = ", pprExpr body ]
-
-pprAExpr :: CoreExpr -> Iseq
-pprAExpr e | isAtomicExpr e = pprExpr e
-           | otherwise      = iConcat [ iStr "(", pprExpr e, iStr ")" ]
+              iStr " = ", pprExpr level body ]
 
 pprDefns :: [(Name, CoreExpr)] -> Iseq
 pprDefns defns = iInterleave sep (map pprDefn defns)
@@ -91,7 +104,7 @@ pprDefns defns = iInterleave sep (map pprDefn defns)
 
 pprDefn :: (Name, CoreExpr) -> Iseq
 pprDefn (name, expr)
-  = iConcat [ iStr name, iStr " = ", iIndent (pprExpr expr) ]
+  = iConcat [ iStr name, iStr " = ", iIndent (pprExpr baseLevel expr) ]
 
 pprProgram :: CoreProgram -> Iseq
 pprProgram prog = iInterleave iNewline (map pprProg prog)
@@ -99,7 +112,7 @@ pprProgram prog = iInterleave iNewline (map pprProg prog)
 pprProg :: CoreScDefn -> Iseq
 pprProg (name, args, body)
   = iConcat [ iStr name, iStr " ", iInterleave (iStr " ") (map iStr args),
-              iStr " = ", iIndent (pprExpr body) ]
+              iStr " = ", iIndent (pprExpr baseLevel body) ]
 
 --- 1.5.3 Implementing iseq
 
@@ -162,7 +175,29 @@ coreProgram = [
   ("quadruple", ["x"], (ELet nonRecursive
                              [("twice_x", (EAp (EAp (EVar "+") (EVar "x")) (EVar "x")))]
                              (EAp (EAp (EVar "+") (EVar "twice_x")) (EVar "twice_x")))),
-  ("isOne", ["x"], (ECase (EVar "x") [(1, [], (EVar "True")), (2, [], (EVar "False"))]))
+  ("isOne", ["x"], (ECase (EVar "x") [(1, [], (EVar "True")), (2, [], (EVar "False"))])),
+  ("foo", ["x", "y", "z", "w"], (EAp (EAp (EVar "-")
+                                          (EAp (EAp (EVar "*")
+                                                    (EVar "x"))
+                                               (EVar "y")))
+                                     (EAp (EAp (EVar "/")
+                                               (EVar "z"))
+                                          (EVar "w")))),
+  ("bar", ["x", "y", "z", "w"], (EAp (EAp (EVar "*")
+                                          (EAp (EAp (EVar "+")
+                                                    (EVar "x"))
+                                               (EVar "y")))
+                                     (EAp (EAp (EVar "-")
+                                               (EVar "z"))
+                                          (EVar "w")))),
+  ("baz", ["x", "y", "p", "xs"], (EAp (EAp (EVar ">")
+                                           (EAp (EAp (EVar "+")
+                                                     (EVar "x"))
+                                                (EVar "y")))
+                                      (EAp (EAp (EVar "*")
+                                                (EVar "p"))
+                                           (EAp (EVar "length")
+                                                (EVar "xs")))))
   ]
 
 main = do
