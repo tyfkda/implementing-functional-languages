@@ -78,10 +78,20 @@ pprExpr (ELet isrec defns expr)
               iStr "in ", pprExpr expr ]
     where keyword | not isrec = "let"
                   | isrec     = "letrec"
+pprExpr (ECase x alts)
+  = iConcat [ iStr "case ", pprExpr x, iStr " of", iNewline,
+              iInterleave (iStr " ;" `iAppend` iNewline)
+                          (map (\(key, vars, body) -> iConcat [iStr "  <", iStr (show key), iStr "> ",
+                                                               iConcat (map iStr vars),
+                                                               iStr "-> ", pprExpr body])
+                               alts) ]
+pprExpr (ELam args body)
+  = iConcat [ iStr "\\", iInterleave (iStr " ") (map iStr args),
+              iStr " = ", pprExpr body ]
 
-pprAExpr :: CoreExpr -> String
+pprAExpr :: CoreExpr -> Iseq
 pprAExpr e | isAtomicExpr e = pprExpr e
-           | otherwise      = "(" ++ pprExpr e ++ ")"
+           | otherwise      = iConcat [ iStr "(", pprExpr e, iStr ")" ]
 
 --- 1.5.2 An abstract data type for pretty-printing
 
@@ -111,6 +121,14 @@ pprDefns defns = iInterleave sep (map pprDefn defns)
 pprDefn :: (Name, CoreExpr) -> Iseq
 pprDefn (name, expr)
   = iConcat [ iStr name, iStr " = ", iIndent (pprExpr expr) ]
+
+pprProgram :: CoreProgram -> Iseq
+pprProgram prog = iInterleave iNewline (map pprProg prog)
+
+pprProg :: CoreScDefn -> Iseq
+pprProg (name, args, body)
+  = iConcat [ iStr name, iStr " ", iInterleave (iStr " ") (map iStr args),
+              iStr " = ", pprExpr body ]
 
 pprint prog = iDisplay (pprProgram prog)
 
