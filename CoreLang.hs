@@ -1,3 +1,5 @@
+module CoreLang where
+
 -- 1.3 Data types for the Core language
 
 data Expr a
@@ -62,6 +64,19 @@ preludeDefs
       ("compose", ["f", "g", "x"], EAp (EVar "f")
                                        (EAp (EVar "g") (EVar "x"))),
       ("twice", ["f"], EAp (EAp (EVar "compose") (EVar "f")) (EVar "f")) ]
+
+-- 1.5 A pretty-printer for the Core language
+--- 1.5.1 Pretty-printing using strings
+
+pprExpr :: CoreExpr -> String
+pprExpr (ENum n) = show n
+pprExpr (EVar v) = v
+pprExpr (EAp e1 e2) = pprExpr e1 ++ " " ++ pprAExpr e2
+
+pprAExpr :: CoreExpr -> String
+pprAExpr e | isAtomicExpr e = pprExpr e
+pprAExpr e | otherwise      = "(" ++ pprExpr e ++ ")"
+
 
 -- Main
 
