@@ -87,6 +87,22 @@ pprAExpr :: CoreExpr -> Iseq
 pprAExpr e | isAtomicExpr e = pprExpr e
            | otherwise      = iConcat [ iStr "(", pprExpr e, iStr ")" ]
 
+pprDefns :: [(Name, CoreExpr)] -> Iseq
+pprDefns defns = iInterleave sep (map pprDefn defns)
+  where sep = iConcat [ iStr ";", iNewline ]
+
+pprDefn :: (Name, CoreExpr) -> Iseq
+pprDefn (name, expr)
+  = iConcat [ iStr name, iStr " = ", iIndent (pprExpr expr) ]
+
+pprProgram :: CoreProgram -> Iseq
+pprProgram prog = iInterleave iNewline (map pprProg prog)
+
+pprProg :: CoreScDefn -> Iseq
+pprProg (name, args, body)
+  = iConcat [ iStr name, iStr " ", iInterleave (iStr " ") (map iStr args),
+              iStr " = ", pprExpr body ]
+
 --- 1.5.3 Implementing iseq
 
 data Iseq = INil
@@ -117,22 +133,6 @@ iInterleave :: Iseq -> [Iseq] -> Iseq
 iInterleave _ [] = iNil
 iInterleave c [seq] = seq
 iInterleave c (seq: seqs) = iConcat [seq, c, iInterleave c seqs]
-
-pprDefns :: [(Name, CoreExpr)] -> Iseq
-pprDefns defns = iInterleave sep (map pprDefn defns)
-  where sep = iConcat [ iStr ";", iNewline ]
-
-pprDefn :: (Name, CoreExpr) -> Iseq
-pprDefn (name, expr)
-  = iConcat [ iStr name, iStr " = ", iIndent (pprExpr expr) ]
-
-pprProgram :: CoreProgram -> Iseq
-pprProgram prog = iInterleave iNewline (map pprProg prog)
-
-pprProg :: CoreScDefn -> Iseq
-pprProg (name, args, body)
-  = iConcat [ iStr name, iStr " ", iInterleave (iStr " ") (map iStr args),
-              iStr " = ", pprExpr body ]
 
 flatten :: [Iseq] -> String
 flatten [] = ""
