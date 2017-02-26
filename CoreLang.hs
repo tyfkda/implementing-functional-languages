@@ -46,12 +46,6 @@ type CoreProgram = Program Name
 type ScDefn a = (Name, [a], Expr a)
 type CoreScDefn = ScDefn Name
 
-coreProgram :: CoreProgram
-coreProgram = [
-  ("main", [], (EAp (EVar "double") (ENum 21))),
-  ("double", ["x"], (EAp (EAp (EVar "+") (EVar "x")) (EVar "x")))
-  ]
-
 -- 1.4 A small standard prelude
 
 preludeDefs :: CoreProgram
@@ -69,7 +63,7 @@ preludeDefs
 --- 1.5.1 Pretty-printing using strings
 
 pprExpr :: CoreExpr -> Iseq
---pprExpr (ENum n) = show n
+pprExpr (ENum n) = iStr $ show n
 pprExpr (EVar v) = iStr v
 pprExpr (EAp e1 e2) = (pprExpr e1) `iAppend` (iStr " ") `iAppend` (pprAExpr e2)
 pprExpr (ELet isrec defns expr)
@@ -93,16 +87,26 @@ pprAExpr :: CoreExpr -> Iseq
 pprAExpr e | isAtomicExpr e = pprExpr e
            | otherwise      = iConcat [ iStr "(", pprExpr e, iStr ")" ]
 
---- 1.5.2 An abstract data type for pretty-printing
+--- 1.5.3 Implementing iseq
 
 data Iseq = INil
+          | IStr String
+          | IAppend Iseq Iseq
+
+--- 1.5.2 An abstract data type for pretty-printing
 
 iNil :: Iseq  -- The empty iseq
+iNil = INil
 iStr :: String -> Iseq  -- Turn a string into an iseq
+iStr str = IStr str
 iAppend :: Iseq -> Iseq -> Iseq  -- Append two iseqs
+iAppend seq1 seq2 = IAppend seq1 seq2
 iNewline :: Iseq  -- New line with indentation
+iNewline = IStr "\n"
 iIndent :: Iseq -> Iseq  -- Indent an iseq
+iIndent seq = seq
 iDisplay :: Iseq -> String  -- Turn an iseq into a string
+iDisplay seq = flatten [seq]
 
 iConcat :: [Iseq] -> Iseq
 iConcat [] = iNil
@@ -130,9 +134,21 @@ pprProg (name, args, body)
   = iConcat [ iStr name, iStr " ", iInterleave (iStr " ") (map iStr args),
               iStr " = ", pprExpr body ]
 
+flatten :: [Iseq] -> String
+flatten [] = ""
+flatten (INil : seqs) = flatten seqs
+flatten (IStr s : seqs) = s ++ (flatten seqs)
+flatten (IAppend seq1 seq2 : seqs) = flatten (seq1 : seq2 : seqs)
+
 pprint prog = iDisplay (pprProgram prog)
 
 -- Main
 
+coreProgram :: CoreProgram
+coreProgram = [
+  ("main", [], (EAp (EVar "double") (ENum 21))),
+  ("double", ["x"], (EAp (EAp (EVar "+") (EVar "x")) (EVar "x")))
+  ]
+
 main = do
-  print coreProgram
+  putStrLn $ pprint coreProgram
