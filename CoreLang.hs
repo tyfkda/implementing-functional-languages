@@ -67,13 +67,12 @@ pprExpr (ENum n) = iStr $ show n
 pprExpr (EVar v) = iStr v
 pprExpr (EAp e1 e2) = (pprExpr e1) `iAppend` (iStr " ") `iAppend` (pprAExpr e2)
 pprExpr (ELet isrec defns expr)
-  = iConcat [ iStr keyword, iStr "  ", iIndent (pprDefns defns), iNewline,
-              iStr "in ", pprExpr expr ]
+  = iConcat [ iStr keyword, iStr "  ", iIndent (pprDefns defns), iStr "\nin ", pprExpr expr ]
     where keyword | not isrec = "let"
                   | isrec     = "letrec"
 pprExpr (ECase x alts)
-  = iConcat [ iStr "case ", pprExpr x, iStr " of", iNewline,
-              iInterleave (iStr ";" `iAppend` iNewline)
+  = iConcat [ iStr "case ", pprExpr x, iStr " of\n",
+              iInterleave (iStr ";\n")
                           (map (\(key, vars, body) -> iConcat [iStr "  <", iStr (show key), iStr "> ",
                                                                iConcat (map iStr vars),
                                                                iStr "-> ", pprExpr body])
@@ -116,7 +115,9 @@ data Iseq = INil
 iNil :: Iseq  -- The empty iseq
 iNil = INil
 iStr :: String -> Iseq  -- Turn a string into an iseq
-iStr str = IStr str
+iStr str = f $ span (/= '\n') str
+  where f (s1, "") = IStr s1
+        f (s1, s2) = IStr s1 `iAppend` (iNewline `iAppend` iStr (tail s2))
 iAppend :: Iseq -> Iseq -> Iseq  -- Append two iseqs
 iAppend INil seq2 = seq2
 iAppend seq1 INil = seq1
@@ -160,7 +161,8 @@ coreProgram = [
   ("double", ["x"], (EAp (EAp (EVar "+") (EVar "x")) (EVar "x"))),
   ("quadruple", ["x"], (ELet nonRecursive
                              [("twice_x", (EAp (EAp (EVar "+") (EVar "x")) (EVar "x")))]
-                             (EAp (EAp (EVar "+") (EVar "twice_x")) (EVar "twice_x"))))
+                             (EAp (EAp (EVar "+") (EVar "twice_x")) (EVar "twice_x")))),
+  ("isOne", ["x"], (ECase (EVar "x") [(1, [], (EVar "True")), (2, [], (EVar "False"))]))
   ]
 
 main = do
