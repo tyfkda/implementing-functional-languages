@@ -93,8 +93,16 @@ iAppend :: Iseq -> Iseq -> Iseq  -- Append two iseqs
 iNewline :: Iseq  -- New line with indentation
 iIndent :: Iseq -> Iseq  -- Indent an iseq
 iDisplay :: Iseq -> String  -- Turn an iseq into a string
+
 iConcat :: [Iseq] -> Iseq
+iConcat [] = iNil
+iConcat [seq] = seq
+iConcat (seq: seqs) = seq `iAppend` iConcat seqs
+
 iInterleave :: Iseq -> [Iseq] -> Iseq
+iInterleave _ [] = iNil
+iInterleave c [seq] = seq
+iInterleave c (seq: seqs) = iConcat [seq, c, iInterleave c seqs]
 
 pprDefns :: [(Name, CoreExpr)] -> Iseq
 pprDefns defns = iInterleave sep (map pprDefn defns)
@@ -104,6 +112,7 @@ pprDefn :: (Name, CoreExpr) -> Iseq
 pprDefn (name, expr)
   = iConcat [ iStr name, iStr " = ", iIndent (pprExpr expr) ]
 
+pprint prog = iDisplay (pprProgram prog)
 
 -- Main
 
