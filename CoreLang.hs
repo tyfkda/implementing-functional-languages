@@ -131,12 +131,20 @@ iStr :: String -> Iseq  -- Turn a string into an iseq
 iStr str = f $ span (/= '\n') str
   where f (s1, "") = IStr s1
         f (s1, s2) = IStr s1 `iAppend` (iNewline `iAppend` iStr (tail s2))
+iNum :: Int -> Iseq
+iNum n = iStr (show n)
+iFWNum :: Int -> Int -> Iseq
+iFWNum width n = iStr (space (width - length digits) ++ digits)
+  where digits = show n
 iAppend :: Iseq -> Iseq -> Iseq  -- Append two iseqs
 iAppend INil seq2 = seq2
 iAppend seq1 INil = seq1
 iAppend seq1 seq2 = IAppend seq1 seq2
 iNewline :: Iseq  -- New line with indentation
 iNewline = INewline
+iLayn :: [Iseq] -> Iseq
+iLayn seqs = iConcat (map lay_item (zip [1..] seqs))
+  where lay_item (n, seq) = iConcat [ iFWNum 4 n, iStr ") ", iIndent seq, iNewline ]
 iIndent :: Iseq -> Iseq  -- Indent an iseq
 iIndent seq = IIndent seq
 iDisplay :: Iseq -> String  -- Turn an iseq into a string
