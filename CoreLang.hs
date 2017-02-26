@@ -68,14 +68,41 @@ preludeDefs
 -- 1.5 A pretty-printer for the Core language
 --- 1.5.1 Pretty-printing using strings
 
-pprExpr :: CoreExpr -> String
-pprExpr (ENum n) = show n
-pprExpr (EVar v) = v
-pprExpr (EAp e1 e2) = pprExpr e1 ++ " " ++ pprAExpr e2
+pprExpr :: CoreExpr -> Iseq
+--pprExpr (ENum n) = show n
+pprExpr (EVar v) = iStr v
+pprExpr (EAp e1 e2) = (pprExpr e1) `iAppend` (iStr " ") `iAppend` (pprAExpr e2)
+pprExpr (ELet isrec defns expr)
+  = iConcat [ iStr keyword, iNewline,
+              iStr "  ", iIndent (pprDefns defns), iNewline,
+              iStr "in ", pprExpr expr ]
+    where keyword | not isrec = "let"
+                  | isrec     = "letrec"
 
 pprAExpr :: CoreExpr -> String
 pprAExpr e | isAtomicExpr e = pprExpr e
-pprAExpr e | otherwise      = "(" ++ pprExpr e ++ ")"
+           | otherwise      = "(" ++ pprExpr e ++ ")"
+
+--- 1.5.2 An abstract data type for pretty-printing
+
+data Iseq = INil
+
+iNil :: Iseq  -- The empty iseq
+iStr :: String -> Iseq  -- Turn a string into an iseq
+iAppend :: Iseq -> Iseq -> Iseq  -- Append two iseqs
+iNewline :: Iseq  -- New line with indentation
+iIndent :: Iseq -> Iseq  -- Indent an iseq
+iDisplay :: Iseq -> String  -- Turn an iseq into a string
+iConcat :: [Iseq] -> Iseq
+iInterleave :: Iseq -> [Iseq] -> Iseq
+
+pprDefns :: [(Name, CoreExpr)] -> Iseq
+pprDefns defns = iInterleave sep (map pprDefn defns)
+  where sep = iConcat [ iStr ";", iNewline ]
+
+pprDefn :: (Name, CoreExpr) -> Iseq
+pprDefn (name, expr)
+  = iConcat [ iStr name, iStr " = ", iIndent (pprExpr expr) ]
 
 
 -- Main
