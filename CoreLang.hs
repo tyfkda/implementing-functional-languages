@@ -116,6 +116,8 @@ iNil = INil
 iStr :: String -> Iseq  -- Turn a string into an iseq
 iStr str = IStr str
 iAppend :: Iseq -> Iseq -> Iseq  -- Append two iseqs
+iAppend INil seq2 = seq2
+iAppend seq1 INil = seq1
 iAppend seq1 seq2 = IAppend seq1 seq2
 iNewline :: Iseq  -- New line with indentation
 iNewline = IStr "\n"
