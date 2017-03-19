@@ -57,7 +57,17 @@ pThen combine p1 p2 toks =
     [(combine v1 v2, toks2) | (v1, toks1) <- p1 toks,
                               (v2, toks2) <- p2 toks1]
 
+pThen3 combine p1 p2 p3 toks =
+    [(combine v1 v2 v3, toks3) | (v1, toks1) <- p1 toks,
+                                 (v2, toks2) <- p2 toks1,
+                                 (v3, toks3) <- p3 toks2]
+
+pThen4 combine p1 p2 p3 p4 toks =
+    [(combine v1 v2 v3 v4, toks4) | (v1, toks1) <- p1 toks,
+                                    (v2, toks2) <- p2 toks1,
+                                    (v3, toks3) <- p3 toks2,
+                                    (v4, toks4) <- p4 toks3]
 
 pGreeting :: Parser (String, String)
-pGreeting = let mk_pair hg name = (hg, name)
-            in pThen mk_pair pHelloOrGoodbye pVar
+pGreeting = let mk_greeting hg name exclamation = (hg, name)
+            in pThen3 mk_greeting pHelloOrGoodbye pVar (pLit "!")
