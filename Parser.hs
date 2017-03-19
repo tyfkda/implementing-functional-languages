@@ -7,6 +7,7 @@ type Token = String  -- A token is never empty
 clex [] = []
 clex (c:cs)
   | isWhiteSpace c = clex cs
+  | isLineComment c cs = clex $ skipLineComment cs
   | isDigit c = let num_token = c : takeWhile isDigit cs
                     rest_cs = dropWhile isDigit cs
                 in num_token : clex rest_cs
@@ -18,3 +19,10 @@ clex (c:cs)
 isIdChar, isWhiteSpace :: Char -> Bool
 isIdChar c = isAlpha c || isDigit c || (c == '_')
 isWhiteSpace c = c `elem` " \t\n"
+
+isLineComment '-' ('-':_) = True
+isLineComment _ _         = False
+
+skipLineComment cs = drop1 $ dropWhile (/= '\n') cs
+  where drop1 [] = []
+        drop1 (x:xs) = xs
