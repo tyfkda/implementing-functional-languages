@@ -68,6 +68,19 @@ pThen4 combine p1 p2 p3 p4 toks =
                                     (v3, toks3) <- p3 toks2,
                                     (v4, toks4) <- p4 toks3]
 
+pZeroOrMore :: Parser a -> Parser [a]
+pZeroOrMore p = (pOneOrMore p) `pAlt` (pEmpty [])
+
+pOneOrMore :: Parser a -> Parser [a]
+pOneOrMore p = pThen (:) p (pZeroOrMore p)
+
+pEmpty :: a -> Parser a
+pEmpty v toks = [(v, toks)]
+
+
 pGreeting :: Parser (String, String)
 pGreeting = let mk_greeting hg name exclamation = (hg, name)
             in pThen3 mk_greeting pHelloOrGoodbye pVar (pLit "!")
+
+pGreetings :: Parser [(String, String)]
+pGreetings = pZeroOrMore pGreeting
