@@ -33,3 +33,31 @@ isTwoCharOps p (c:cs)  = (p: c: []) `elem` twoCharOps
 
 twoCharOps :: [String]
 twoCharOps = ["==", "~=", ">=", "<=", "->"]
+
+-- 1.6.2 Basic tools for parsing
+
+type Parser a = [Token] -> [(a, [Token])]
+
+pLit :: String -> Parser String
+pLit s (tok:toks) | s == tok   = [(s, toks)]
+                  | otherwise  = []
+pLit s []         = []
+
+pVar :: Parser String
+pVar [] = []
+pVar (tok:toks) = [(tok, toks)]
+
+pAlt :: Parser a -> Parser a -> Parser a
+pAlt p1 p2 toks = (p1 toks) ++ (p2 toks)
+
+pHelloOrGoodbye :: Parser String
+pHelloOrGoodbye = (pLit "hello") `pAlt` (pLit "goodbye")
+
+pThen combine p1 p2 toks =
+    [(combine v1 v2, toks2) | (v1, toks1) <- p1 toks,
+                              (v2, toks2) <- p2 toks1]
+
+
+pGreeting :: Parser (String, String)
+pGreeting = let mk_pair hg name = (hg, name)
+            in pThen mk_pair pHelloOrGoodbye pVar
