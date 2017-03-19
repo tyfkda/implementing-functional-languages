@@ -77,3 +77,12 @@ pEmpty v toks = [(v, toks)]
 pApply :: Parser a -> (a -> b) -> Parser b
 pApply p f toks = [(f v, toks1) | (v, toks1) <- p toks]
 
+pOneOrMoreWithSep :: Parser a -> Parser b -> Parser [a]
+pOneOrMoreWithSep p1 p2 toks = if null r2
+                                 then [([v1], toks1)]
+                                 else [(v1': v2', toks3) | (v1', _) <- [r1],
+                                                           (v2', toks3) <- pZeroOrMoreWithSep toks2]
+  where [r1@(v1, toks1)] = p1 toks
+        r2 = p2 toks1
+        toks2 = snd $ head r2
+        pZeroOrMoreWithSep = ((pOneOrMoreWithSep p1 p2) `pAlt` (pEmpty []))

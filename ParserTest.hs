@@ -18,3 +18,5 @@ main = do
   print $ pGreeting tokens
   print $ pGreetings tokens
   print $ pGreetingsN tokens
+
+  print $ pOneOrMoreWithSep pGreeting (pLit ";") ["goodbye", "James", "!", ";", "hello", "yoko", "!"]
