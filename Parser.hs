@@ -46,8 +46,12 @@ pSat f (tok:toks) | f tok = [(tok, toks)]
 pLit :: String -> Parser String
 pLit s = pSat (== s)
 
+keywords :: [String]
+keywords = ["let", "letrec", "case", "in", "of", "Pack"]
+
 pVar :: Parser String
-pVar = pSat (\(c:cs) -> isAlpha c && all isIdChar cs)
+pVar = pSat (\tok@(c:cs) -> isAlpha c && all isIdChar cs &&
+                            not (tok `elem` keywords))
 
 pAlt :: Parser a -> Parser a -> Parser a
 pAlt p1 p2 toks = (p1 toks) ++ (p2 toks)
