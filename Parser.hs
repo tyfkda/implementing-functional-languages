@@ -14,6 +14,7 @@ clex (c:cs)
   | isAlpha c = let var_tok = c : takeWhile isIdChar cs
                     rest_cs = dropWhile isIdChar cs
                 in var_tok : clex rest_cs
+  | isTwoCharOps c cs = (c: head cs: []) : clex (tail cs)
   | True = [c] : clex cs
 
 isIdChar, isWhiteSpace :: Char -> Bool
@@ -26,3 +27,9 @@ isLineComment _ _         = False
 skipLineComment cs = drop1 $ dropWhile (/= '\n') cs
   where drop1 [] = []
         drop1 (x:xs) = xs
+
+isTwoCharOps p [] = False
+isTwoCharOps p (c:cs)  = (p: c: []) `elem` twoCharOps
+
+twoCharOps :: [String]
+twoCharOps = ["==", "~=", ">=", "<=", "->"]
