@@ -2,24 +2,27 @@ module Parser where
 
 import Data.Char (isAlpha, isDigit)
 
-type Token = String  -- A token is never empty
+type Token = (Int, String)  -- A token is never empty
 
-clex [] = []
-clex (c:cs)
-  | isWhiteSpace c = clex cs
-  | isLineComment c cs = clex $ skipLineComment cs
-  | isDigit c = let num_token = c : takeWhile isDigit cs
+clex :: Int -> String -> [Token]
+clex _ [] = []
+clex lineNo (c:cs)
+  | isNewLine c = clex (lineNo + 1) cs
+  | isWhiteSpace c = clex lineNo cs
+  | isLineComment c cs = clex (lineNo + 1) $ skipLineComment cs
+  | isDigit c = let num_token = (lineNo, c : takeWhile isDigit cs)
                     rest_cs = dropWhile isDigit cs
-                in num_token : clex rest_cs
-  | isAlpha c = let var_tok = c : takeWhile isIdChar cs
+                in num_token : clex lineNo rest_cs
+  | isAlpha c = let var_tok = (lineNo, c : takeWhile isIdChar cs)
                     rest_cs = dropWhile isIdChar cs
-                in var_tok : clex rest_cs
-  | isTwoCharOps c cs = (c: head cs: []) : clex (tail cs)
-  | True = [c] : clex cs
+                in var_tok : clex lineNo rest_cs
+  | isTwoCharOps c cs = (lineNo, c: head cs: []) : clex lineNo (tail cs)
+  | True = (lineNo, [c]) : clex lineNo cs
 
-isIdChar, isWhiteSpace :: Char -> Bool
+isIdChar, isWhiteSpace, isNewLine :: Char -> Bool
 isIdChar c = isAlpha c || isDigit c || (c == '_')
-isWhiteSpace c = c `elem` " \t\n"
+isWhiteSpace c = c `elem` " \t"
+isNewLine c = c == '\n'
 
 isLineComment '-' ('-':_) = True
 isLineComment _ _         = False
