@@ -38,14 +38,16 @@ twoCharOps = ["==", "~=", ">=", "<=", "->"]
 
 type Parser a = [Token] -> [(a, [Token])]
 
+pSat :: (String -> Bool) -> Parser String
+pSat _ [] = []
+pSat f (tok:toks) | f tok = [(tok, toks)]
+                  | otherwise = []
+
 pLit :: String -> Parser String
-pLit s (tok:toks) | s == tok   = [(s, toks)]
-                  | otherwise  = []
-pLit s []         = []
+pLit s = pSat (== s)
 
 pVar :: Parser String
-pVar [] = []
-pVar (tok:toks) = [(tok, toks)]
+pVar = pSat (\(c:cs) -> isAlpha c && all isIdChar cs)
 
 pAlt :: Parser a -> Parser a -> Parser a
 pAlt p1 p2 toks = (p1 toks) ++ (p2 toks)
