@@ -50,9 +50,6 @@ pVar (tok:toks) = [(tok, toks)]
 pAlt :: Parser a -> Parser a -> Parser a
 pAlt p1 p2 toks = (p1 toks) ++ (p2 toks)
 
-pHelloOrGoodbye :: Parser String
-pHelloOrGoodbye = (pLit "hello") `pAlt` (pLit "goodbye")
-
 pThen combine p1 p2 toks =
     [(combine v1 v2, toks2) | (v1, toks1) <- p1 toks,
                               (v2, toks2) <- p2 toks1]
@@ -80,12 +77,3 @@ pEmpty v toks = [(v, toks)]
 pApply :: Parser a -> (a -> b) -> Parser b
 pApply p f toks = [(f v, toks1) | (v, toks1) <- p toks]
 
-pGreeting :: Parser (String, String)
-pGreeting = let mk_greeting hg name exclamation = (hg, name)
-            in pThen3 mk_greeting pHelloOrGoodbye pVar (pLit "!")
-
-pGreetings :: Parser [(String, String)]
-pGreetings = pZeroOrMore pGreeting
-
-pGreetingsN :: Parser Int
-pGreetingsN = (pZeroOrMore pGreeting) `pApply` length
