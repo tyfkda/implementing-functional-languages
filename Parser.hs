@@ -69,7 +69,7 @@ pThen4 combine p1 p2 p3 p4 toks =
                                     (v4, toks4) <- p4 toks3]
 
 pZeroOrMore :: Parser a -> Parser [a]
-pZeroOrMore p = (pOneOrMore p) `pAlt` (pEmpty [])
+pZeroOrMore p = ((pOneOrMore p) `pAlt` (pEmpty []))
 
 pOneOrMore :: Parser a -> Parser [a]
 pOneOrMore p = pThen (:) p (pZeroOrMore p)
@@ -77,6 +77,8 @@ pOneOrMore p = pThen (:) p (pZeroOrMore p)
 pEmpty :: a -> Parser a
 pEmpty v toks = [(v, toks)]
 
+pApply :: Parser a -> (a -> b) -> Parser b
+pApply p f toks = [(f v, toks1) | (v, toks1) <- p toks]
 
 pGreeting :: Parser (String, String)
 pGreeting = let mk_greeting hg name exclamation = (hg, name)
@@ -84,3 +86,6 @@ pGreeting = let mk_greeting hg name exclamation = (hg, name)
 
 pGreetings :: Parser [(String, String)]
 pGreetings = pZeroOrMore pGreeting
+
+pGreetingsN :: Parser Int
+pGreetingsN = (pZeroOrMore pGreeting) `pApply` length
