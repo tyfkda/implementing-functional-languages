@@ -53,6 +53,9 @@ pVar :: Parser String
 pVar = pSat (\tok@(c:cs) -> isAlpha c && all isIdChar cs &&
                             not (tok `elem` keywords))
 
+pNum :: Parser Int
+pNum = pApply (pSat $ all isDigit) read
+
 pAlt :: Parser a -> Parser a -> Parser a
 pAlt p1 p2 toks = (p1 toks) ++ (p2 toks)
 
