@@ -75,10 +75,12 @@ pThen4 combine p1 p2 p3 p4 toks =
                                     (v4, toks4) <- p4 toks3]
 
 pZeroOrMore :: Parser a -> Parser [a]
-pZeroOrMore p = ((pOneOrMore p) `pAlt` (pEmpty []))
+--pZeroOrMore p = ((pOneOrMore p) `pAlt` (pEmpty []))
+pZeroOrMore p = take 1 . ((pOneOrMore p) `pAlt` (pEmpty []))
 
 pOneOrMore :: Parser a -> Parser [a]
-pOneOrMore p = pThen (:) p (pZeroOrMore p)
+--pOneOrMore p = pThen (:) p (pZeroOrMore p)
+pOneOrMore p = take 1 . pThen (:) p (pZeroOrMore p)
 
 pEmpty :: a -> Parser a
 pEmpty v toks = [(v, toks)]
