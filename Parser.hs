@@ -1,6 +1,7 @@
 module Parser where
 
 import Data.Char (isAlpha, isDigit)
+import Data.List (foldl')
 import CoreLang (CoreProgram, CoreScDefn, CoreExpr, Expr(..))
 
 type Token = String  -- A token is never empty
@@ -18,10 +19,12 @@ pSc = pThen4 mk_sc pVar (pZeroOrMore pVar) (pLit "=") pExpr
   where mk_sc name paramNames eq coreExpr = (name, paramNames, coreExpr)
 
 pExpr :: Parser CoreExpr
-pExpr = ((pThen4 (\_ defns _ expr -> ELet False defns expr) (pLit "let") pDefns (pLit "in") pExpr) `pAlt`
+pExpr = ((pApply (pOneOrMore pAexpr) mk_ap_chain) `pAlt`
+         (pThen4 (\_ defns _ expr -> ELet False defns expr) (pLit "let") pDefns (pLit "in") pExpr) `pAlt`
          (pThen4 (\_ defns _ expr -> ELet True defns expr) (pLit "letrec") pDefns (pLit "in") pExpr) `pAlt`
-         (pThen4 (\_ expr _ alts -> ECase expr alts) (pLit "case") pExpr (pLit "of") pAlternatives) `pAlt`
-         pAexpr)
+         (pThen4 (\_ expr _ alts -> ECase expr alts) (pLit "case") pExpr (pLit "of") pAlternatives))
+  where mk_ap_chain [x] = x
+        mk_ap_chain (x:xs) = foldl' EAp x xs
 
 pAexpr :: Parser CoreExpr
 pAexpr = ((pApply pVar EVar) `pAlt`

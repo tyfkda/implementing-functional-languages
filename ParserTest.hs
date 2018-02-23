@@ -25,3 +25,4 @@ main = do
   putStrLn $ pprint $ syntax ["f", "=", "3"]
   putStrLn $ pprint $ syntax ["g", "x", "y", "=", "let", "z", "=", "x", "in", "z"]
   putStrLn $ pprint $ syntax ["h", "x", "=", "case", "(", "let", "y", "=", "x", "in", "y", ")", "of", "<", "1", ">", "->", "2", ";", "<", "2", ">", "->", "5"]
+  putStrLn $ pprint $ syntax $ clex "a = f x y z"
